@@ -69,22 +69,47 @@ def process_log_file(cur, filepath):
     # for i, row in user_df.iterrows():
     #     cur.execute(user_table_insert, row)
 
+    # make a query (or list comprehension query) to get all ordered songids and artist ids
+    # then merge that into a new df with a similar list comprehension for the other fields
+
+    # x2 = [[row.ts, row.userId, row.level, row.sessionId, row.location, row.userAgent] for index, row in df.iterrows()]
+    # print(x2)
+
+    # okay cool so we got the list comprehension for the other rows, but now i'm wondering
+    # we're gonna have to write something fairly complex to grab the other things and again loop through the df - would it make more sense at this point just to loop through the df once
+    # okay  - but if we loop then we still ahve to save all the id data into a list of some sort which we'll then have to add to a custom df
+    songplay_data = []
+
     # insert songplay records
     for index, row in df.iterrows():
-        print(row)
+        # print(row)
         # get songid and artistid from song and artist tables
         cur.execute(song_select, (row.song, row.artist, row.length))
         results = cur.fetchone()
-        
+
         if results:
             songid, artistid = results
         else:
             songid, artistid = None, None
-
+        # print(row.userAgent)
         # insert songplay record
-        songplay_data = [row.ts, row.userId, row.level, songid, artistid, row.sessionId, row.location, row.userAgent]
+        songplay_data.append([row.ts, row.userId, row.level, songid, artistid, row.sessionId, row.location, row.userAgent.replace("\"", "")])
         # for this since we're going row by row maybe I should store all the data up in a list and then batch copy it to the table instead of a row by row insert
-        cur.execute(songplay_table_insert, songplay_data)
+    
+
+    # need to get songplay data to DF
+    songplay_df = pd.DataFrame(songplay_data)
+    # print(songplay_df.h)
+    # print(songplay_df.head())
+    # print(songplay_df.shape)
+
+    # cur.execute(songplay_table_insert, songplay_data)
+
+    buffer = StringIO()
+    songplay_df.to_csv(buffer, sep='\t', header=False, index=False)
+    buffer.seek(0)
+
+    cur.copy_from(buffer, 'songplays', sep='\t', columns=('start_time', 'user_id', 'level', 'song_id', 'artist_id', 'session_id', 'location', 'user_agent'))
 
 
 def process_data(cur, conn, filepath, func):
