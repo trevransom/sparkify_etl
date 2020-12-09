@@ -9,9 +9,9 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 # CREATE TABLES
 
 songplay_table_create = ("""
-    CREATE TABLE songplays (songplay_id int, start_time int,
-                            user_id int, level text, song_id int,
-                            artist_id int, session_id int, location text,
+    CREATE TABLE songplays (songplay_id SERIAL PRIMARY KEY, start_time timestamp,
+                            user_id int, level text, song_id text,
+                            artist_id text, session_id int, location text,
                             user_agent text)
 """)
 
@@ -39,9 +39,9 @@ time_table_create = ("""
 # INSERT RECORDS
 
 songplay_table_insert = ("""
-    INSERT INTO songplays (songplay_id, start_time, user_id, level, song_id,
+    INSERT INTO songplays (start_time, user_id, level, song_id,
                             artist_id, session_id, location, user_agent)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 """)
 
 user_table_insert = ("""
@@ -68,6 +68,9 @@ time_table_insert = ("""
 # FIND SONGS
 
 song_select = ("""
+    SELECT s.song_id, a.artist_id FROM songs s
+        JOIN artists a ON a.artist_id = s.artist_id
+        WHERE s.title = %s AND a.name = %s AND s.duration = %s
 """)
 
 # QUERY LISTS
