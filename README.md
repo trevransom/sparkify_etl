@@ -14,8 +14,8 @@ The ETL pipeline that was implemented helps quickly move Sparkify's logs to the 
 
 Find area with highest amount of listening instances:  
 `SELECT location, count(location) as num_of_listeners FROM songplays group by location order by num_of_listeners desc limit 1;`  
-**Result: San Francisco-Oakland-Hayward, CA, 691**
+Result: San Francisco-Oakland-Hayward, CA, 691
 
-Find amount of paying users:
+Find amount of paying users:  
 `SELECT count(level) FROM users WHERE level = 'paid';`  
-**Result: 5591**
+Result: 5591
