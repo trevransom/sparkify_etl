@@ -8,14 +8,20 @@ from sql_queries import *
 
 def process_song_file(cur, filepath):
     # open song file
-    df = pd.read_json(filepath)
+    # print(filepath)
+    df = pd.read_json(filepath, typ='series')
+    df = df.to_frame().transpose()
+    # print(df.head(10))
+
+    # perhaps put a test making sure that the df doesn't have more than 1 row 
+    # if it doesn't then just use it if it does then separate or iterate over the rows
 
     # insert song record
     song_data = df.iloc[0][['song_id', 'title', 'artist_id', 'year', 'duration']].values
     cur.execute(song_table_insert, song_data)
 
     # insert artist record
-    # artist_data =
+    artist_data = df.iloc[0][['artist_id', 'artist_name', 'artist_location', 'artist_latitude', 'artist_longitude']].values
     cur.execute(artist_table_insert, artist_data)
 
 
@@ -95,16 +101,11 @@ def process_log_file(cur, filepath):
         # insert songplay record
         songplay_data.append([row.ts, row.userId, row.level, songid, artistid, row.sessionId, row.location, row.userAgent.replace("\"", "")])
         # for this since we're going row by row maybe I should store all the data up in a list and then batch copy it to the table instead of a row by row insert
-    
 
     # need to get songplay data to DF
     songplay_df = pd.DataFrame(songplay_data)
-    # print(songplay_df.h)
-    # print(songplay_df.head())
-    # print(songplay_df.shape)
 
-    # cur.execute(songplay_table_insert, songplay_data)
-
+    # use a tab separator instead of comma because of commas within location and userAgent fields
     buffer = StringIO()
     songplay_df.to_csv(buffer, sep='\t', header=False, index=False)
     buffer.seek(0)
@@ -129,7 +130,6 @@ def process_data(cur, conn, filepath, func):
         func(cur, datafile)
         conn.commit()
         print(f'{i}/{num_files} files processed.')
-        # print(f'{}/{} files processed.'.format(i, num_files))
 
 
 def main():
@@ -145,7 +145,7 @@ def main():
         print("Error: Could not create a cursor")
         print(e)
 
-    # process_data(cur, conn, filepath='data/song_data', func=process_song_file)
+    process_data(cur, conn, filepath='data/song_data', func=process_song_file)
     process_data(cur, conn, filepath='data/log_data', func=process_log_file)
 
     conn.close()

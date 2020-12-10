@@ -1,22 +1,26 @@
 ### Sparkify ETL
 
-### Objective: collect logs into a centralized database
-## also get logs from JSON to Postgres
-## also create a star schema for the daatabase
-
-
-
 #Do the following steps in your README.md file.
 
-Discuss the purpose of this database in the context of the startup, Sparkify, and their analytical goals.
-State and justify your database schema design and ETL pipeline.
-[Optional] Provide example queries and results for song play analysis.
+- Discuss the purpose of this database in the context of the startup, Sparkify, and their analytical goals.
+- State and justify your database schema design and ETL pipeline.
+- [Optional] Provide example queries and results for song play analysis.
 
 
-# Introduction
-A startup called Sparkify wants to analyze the data they've been collecting on songs and user activity on their new music streaming app. The analytics team is particularly interested in understanding what songs users are listening to. Currently, they don't have an easy way to query their data, which resides in a directory of JSON logs on user activity on the app, as well as a directory with JSON metadata on the songs in their app.
+# What is Sparkify?
 
-They'd like a data engineer to create a Postgres database with tables designed to optimize queries on song play analysis, and bring you on the project. Your role is to create a database schema and ETL pipeline for this analysis. You'll be able to test your database and ETL pipeline by running queries given to you by the analytics team from Sparkify and compare your results with their expected results.
+Sparkify, a music streaming startup, wanted to collect logs they have on user activity and song data and centralize them in a database in order to run analytics. This Postgres database, set up with a star schema, will help them to easily access their data in an intuitive fashion and start getting rich insights into their user base.
 
-Project Description
-In this project, you'll apply what you've learned on data modeling with Postgres and build an ETL pipeline using Python. To complete the project, you will need to define fact and dimension tables for a star schema for a particular analytic focus, and write an ETL pipeline that transfers data from files in two local directories into these tables in Postgres using Python and SQL.
+# Why this Database and ETL design?
+
+Our fact table "songplays" contains foreign keys to our dimension table. Our dimension tables contain the descriptive elements like times, durations and other measurements of our data.
+
+The ETL pipeline that was implemented helps quickly move Sparkify's logs to the database by combing through all the log files, parsing out relevant information for each table and then inserting that into the database. The process is expedited even further by utilizing the psycopg2 'copy_from' function which batch copies groups of records into the table instead of adding them 1 by 1. 
+
+# Example song analysis query
+
+Find the weekday with the maximum amount of listeners 
+
+Find amout of paying users.
+SELECT count(level) FROM users WHERE level = 'paid';
+Result: 5591
