@@ -6,29 +6,49 @@ import pandas as pd
 from sql_queries import *
 
 
+def check_data_quality(df):
+    """
+    - Ensures the checked df has 1 row
+    - Returns True if df has 1 row, else False
+    """
+
+    if df.shape[0] == 1:
+        return True
+
+
 def process_song_file(cur, filepath):
+    """
+    - Here we are going load the song file into a dataframe
+    - Then we insert it to the relevant table if it contains just 1 entry
+    """
+
     # open song file
-    # print(filepath)
     df = pd.read_json(filepath, typ='series')
     df = df.to_frame().transpose()
-    # print(df.head(10))
 
-    # perhaps put a test making sure that the df doesn't have more than 1 row 
-    # if it doesn't then just use it if it does then separate or iterate over the rows
+    if check_data_quality(df):
+        # insert song record
+        song_data = df.iloc[0][['song_id', 'title', 'artist_id', 'year', 'duration']].values
+        cur.execute(song_table_insert, song_data)
 
-    # insert song record
-    song_data = df.iloc[0][['song_id', 'title', 'artist_id', 'year', 'duration']].values
-    cur.execute(song_table_insert, song_data)
+        # insert artist record
+        artist_data = df.iloc[0][['artist_id', 'artist_name', 'artist_location', 'artist_latitude', 'artist_longitude']].values
+        cur.execute(artist_table_insert, artist_data)
+    else:
+        for index, row in df.iterrows():
+            # insert song record
+            song_data = df.iloc[index][['song_id', 'title', 'artist_id', 'year', 'duration']].values
+            cur.execute(song_table_insert, song_data)
 
-    # insert artist record
-    artist_data = df.iloc[0][['artist_id', 'artist_name', 'artist_location', 'artist_latitude', 'artist_longitude']].values
-    cur.execute(artist_table_insert, artist_data)
+            # insert artist record
+            artist_data = df.iloc[index][['artist_id', 'artist_name', 'artist_location', 'artist_latitude', 'artist_longitude']].values
+            cur.execute(artist_table_insert, artist_data)
 
 
 def process_log_file(cur, filepath):
     """
-    Here we are going save the dataframe in memory
-    and use copy_from() to copy it to the table
+    - Here we are going save the dataframe in memory
+    and use copy_from() to copy it to the table.
     """
 
     # open log file
@@ -38,7 +58,6 @@ def process_log_file(cur, filepath):
     df = df[df.page == 'NextSong']
 
     # convert timestamp column to datetime
-    # t = pd.read_json(filepath)
     df['ts'] = pd.to_datetime(df.ts, unit='ms')
 
     # insert time data records
@@ -56,11 +75,6 @@ def process_log_file(cur, filepath):
 
     cur.copy_from(buffer, 'time', sep=',')
 
-    # wherever there's a cur.execute I should swap it out for the copy_from function
-
-    # for i, row in time_df.iterrows():
-    #     cur.execute(time_table_insert, list(row))
-
     # load user table
     user_df = df[['userId', 'firstName', 'lastName', 'gender', 'level']]
 
@@ -71,24 +85,10 @@ def process_log_file(cur, filepath):
 
     cur.copy_from(buffer, 'users', sep=',')
 
-    # insert user records
-    # for i, row in user_df.iterrows():
-    #     cur.execute(user_table_insert, row)
-
-    # make a query (or list comprehension query) to get all ordered songids and artist ids
-    # then merge that into a new df with a similar list comprehension for the other fields
-
-    # x2 = [[row.ts, row.userId, row.level, row.sessionId, row.location, row.userAgent] for index, row in df.iterrows()]
-    # print(x2)
-
-    # okay cool so we got the list comprehension for the other rows, but now i'm wondering
-    # we're gonna have to write something fairly complex to grab the other things and again loop through the df - would it make more sense at this point just to loop through the df once
-    # okay  - but if we loop then we still ahve to save all the id data into a list of some sort which we'll then have to add to a custom df
     songplay_data = []
 
     # insert songplay records
     for index, row in df.iterrows():
-        # print(row)
         # get songid and artistid from song and artist tables
         cur.execute(song_select, (row.song, row.artist, row.length))
         results = cur.fetchone()
@@ -97,10 +97,9 @@ def process_log_file(cur, filepath):
             songid, artistid = results
         else:
             songid, artistid = None, None
-        # print(row.userAgent)
+
         # insert songplay record
         songplay_data.append([row.ts, row.userId, row.level, songid, artistid, row.sessionId, row.location, row.userAgent.replace("\"", "")])
-        # for this since we're going row by row maybe I should store all the data up in a list and then batch copy it to the table instead of a row by row insert
 
     # need to get songplay data to DF
     songplay_df = pd.DataFrame(songplay_data)
@@ -114,6 +113,10 @@ def process_log_file(cur, filepath):
 
 
 def process_data(cur, conn, filepath, func):
+    """
+    - Crawl directory adding all filepaths to a list for further processing
+    """
+
     # get all files matching extension from directory
     all_files = []
     for root, dirs, files in os.walk(filepath):
@@ -133,8 +136,13 @@ def process_data(cur, conn, filepath, func):
 
 
 def main():
+    """
+    - Connect to database
+    - Call data processing functions
+    """
+
     try:
-        conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=transom password=student")
+        conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=transom")
     except psycopg2.Error as e:
         print("Error: Could not connect to the Database")
         print(e)
