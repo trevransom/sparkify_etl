@@ -21,6 +21,6 @@ The ETL pipeline that was implemented helps quickly move Sparkify's logs to the 
 
 Find the weekday with the maximum amount of listeners 
 
-Find amout of paying users.
-`SELECT count(level) FROM users WHERE level = 'paid';`  
-**Result: 5591**
+Find amount of paying users:
+> `SELECT count(level) FROM users WHERE level = 'paid';`  
+> **Result: 5591**
