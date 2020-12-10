@@ -10,6 +10,20 @@ Our fact table "songplays" contains foreign keys to our dimension table. Our dim
 
 The ETL pipeline that was implemented helps quickly move Sparkify's logs to the database by combing through all the log files, parsing out relevant information for each table and then inserting that into the database. The process is expedited even further by utilizing the psycopg2 `copy_from` function which batch copies groups of records into the table instead of adding them 1 by 1. 
 
+## How to run
+
+- To run this script you need to initialize a local Postgres database
+- Then clone this repository
+- Install all python requirements from the requirements.txt
+- Run `python create_tables.py` to initialize the database and its tables
+- Run `python etl.py` to load all the json data into the tables
+
+## Explanation of other files
+
+- `etl.ipynb` contains tests for setting up the ETL pipeline
+- `test.ipynb` contains tests for querying the Postgres tables
+- `data/` contains all the song and log data
+
 ## Example song analysis queries
 
 Find area with highest amount of listening instances:  
