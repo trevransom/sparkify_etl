@@ -16,6 +16,25 @@ def check_data_quality(df):
         return True
 
 
+def optimize_insert(cur, df, table_name, table_insert):
+    """
+    - Tries to use the efficient copy_from method
+    - If there's a unique primary key violation then uses SQL query to handle conflicts
+    """
+
+    try:
+        buffer = StringIO()
+        df.to_csv(buffer, header=False, index=False)
+        buffer.seek(0)
+
+        cur.copy_from(buffer, table_name, sep=',')
+
+    except psycopg2.errors.UniqueViolation as e:
+        cur.execute("ROLLBACK")
+        for index, row in df.iterrows():
+            cur.execute(table_insert, row.values)
+
+
 def process_song_file(cur, filepath):
     """
     - Here we are going load the song file into a dataframe
@@ -60,30 +79,19 @@ def process_log_file(cur, filepath):
     # convert timestamp column to datetime
     df['ts'] = pd.to_datetime(df.ts, unit='ms')
 
-    # insert time data records
+    # transform time data records
     df_time = df.ts.dt
-    time_data = zip(df.ts.values, df_time.hour, df_time.day, df_time.isocalendar().week, df_time.month, df_time.year, df_time.dayofweek)
-
     time_data = zip(df.ts.values, df_time.hour, df_time.day, df_time.isocalendar().week, df_time.month, df_time.year, df_time.dayofweek)
     column_labels = ('timestamp', 'hour', 'day', 'week_of_year', 'month', 'year', 'weekday')
     time_df = pd.DataFrame(time_data, columns=column_labels)
 
-    # save dataframe to an in memory buffer
-    buffer = StringIO()
-    time_df.to_csv(buffer, header=False, index=False)
-    buffer.seek(0)
-
-    cur.copy_from(buffer, 'time', sep=',')
+    # if there's a non-unique primary key then using the SQL insert method to handle conflicts
+    # if all keys are unique then using copy_from for speed
+    optimize_insert(cur, time_df, 'time', time_table_insert)
 
     # load user table
     user_df = df[['userId', 'firstName', 'lastName', 'gender', 'level']]
-
-    # save dataframe to an in memory buffer
-    buffer = StringIO()
-    user_df.to_csv(buffer, header=False, index=False)
-    buffer.seek(0)
-
-    cur.copy_from(buffer, 'users', sep=',')
+    optimize_insert(cur, user_df, 'users', user_table_insert)
 
     songplay_data = []
 
