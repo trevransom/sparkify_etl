@@ -10,7 +10,8 @@ Our fact table "songplays" contains foreign keys to our dimension table. Our dim
 
 The ETL pipeline that was implemented helps quickly move Sparkify's logs to the database by combing through all the log files, parsing out relevant information for each table and then inserting that into the database. The process is expedited even further by utilizing the psycopg2 `copy_from` function which batch copies groups of records into the table instead of adding them 1 by 1. 
 
-ER Diagram:
+## Database structure overview
+
 ![ER Diagram](https://udacity-reviews-uploads.s3.us-west-2.amazonaws.com/_attachments/38715/1607614393/Song_ERD.png)
 *From Udacity*
 
